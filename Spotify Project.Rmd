@@ -1,0 +1,717 @@
+---
+title: "Data Taming Final Report"
+output:
+  pdf_document:
+    latex_engine: xelatex
+date: "2023-11-24"
+author: "Thi Kim Oanh Nguyen - a1879781"
+---
+
+# **Executive Summary**
+
+Spotify, being the leading music streaming service globally, aims to predict song genres to improve user experiences and refine playlist recommendations.
+
+During the exploratory data analysis, it became evident that analyzing factors such as release year, speechiness, danceability, and tempo contributes to predicting the playlist genre. Moreover, we observed that song popularity varies among genres and found distinct differences in speechiness across each genre. Interestingly, we noticed a declining trend in song popularity from 1970, followed by a resurgence starting around 2010.
+
+In our modeling approach, we tested three models: Linear Discriminant Analysis (LDA), K-nearest Neighbors (KNN), and Random Forest. Our prediction relied on variables like song popularity, danceability, energy, key, mode, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, song duration, and release year. We omitted all categorical variables and retained all numerical variables.
+
+Upon fine-tuning the hyperparameters for KNN within a range of 1 to 100 and 20 levels, and Random Forest models with 100 trees and 5 levels, we determined the best KNN model with a neighbor value of 100, and the optimal Random Forest model with mtry set at 4 and min_n at 40. Through cross-validation testing, the Random Forest model exhibited better performance compared to LDA and KNN, with the highest accuracy and ROC_AUC scores. However, during testing, the Random Forest model only achieved an accuracy of 56.933%.
+
+In summary, the Random Forest model fails to accurately predict song genres, contradicting the founders' objectives. Therefore, further investigation is considered.
+
+# **Methods**
+
+The dataset comprises songs from diverse Spotify playlists, encompassing 32,833 observations and 23 variables. Among these variables, there are 9 categorical and 13 numeric ones. These attributes encapsulate a wide spectrum of song features, including unique identifiers and song-specific details, album-related information such as release dates, playlist specifics encompassing genre and subgenre classifications, and musical attributes like danceability, energy, pitch, loudness, and mode, indicators for speechiness, acoustic nature, instrumental presence, along with parameters indicating liveness, positivity, tempo, and song duration. The dataset includes an outcome variable representing 6 distinct genres.
+
+The steps taken are explained as follows:
+
+-   Data cleaning: We extracted the year of each song's release from the track album release date and converted it into a single numerical feature for predicting song genres. Unnecessary categorical features such as track IDs, album IDs, playlist IDs, track names, and album names were removed because they are unique identifiers or text fields that do not carry meaningful information about the song's musical characteristics or genre classification. We also handled missing values, ensuring data integrity.
+
+-   Data sampling: Due to computing limitations, the dataset was reduced to 6000 observations, with 1000 observations per genre.
+
+-   Data splitting: A seed value of 1879781 was set for reproducibility, and the sample dataset was divided into training and testing sets.
+
+-   Data preprocessing: Zero-variance predictors were removed, and all predictors were standardized to possess a mean of 0 and a standard deviation of 1. Highly correlated predictors were identified and eliminated. This preprocessing recipe was applied to the training set and testing set.
+
+-   Model specification: Specifications for three models (Linear Discriminant Analysis (LDA), K-nearest Neighbors (KNN), and Random Forest) were defined. The mode was set to classification, and engine configurations were made. For the KNN model, the number of neighbors was defined as a tuneable hyperparameter. The Random Forest model set the number of trees to 100 and tuned the number of variables randomly sampled at each split (mtry) and minimum node size (min_n).
+
+-   Model tuning (KNN and Random Forest): 5 bootstrapped samples were generated from the preprocessed training data. For KNN, we employ a grid of 20 levels ranging from 1 to 100 for the neighbors' parameter. For Random Forest, a grid of 5 levels was created for tuning hyperparameters (mtry and min_n). Model selection utilized the ROC_AUC metric. The best KNN model had a neighbor value of 100, achieving an ROC_AUC score of 80.12% (Table 7). Meanwhile, the optimal Random Forest model had mtry set at 4 and min_n at 40, achieving an ROC_AUC score of 84.13% (Table 8).
+
+In this research, R version 4.3.2 and Rmarkdown in RStudio were used. The primary packages included dplyr, tidyr, lubridate, skimr, inspectdf, rsample, stringr, knitr, tidymodels, janitor, pROC, discrim, yardstick, vip, caret. Additionally, parallel processing capabilities were leveraged to potentially speed up computations.
+
+# **Results**
+
+-   Exploratory data analysis:
+
+After excluding certain categorical variables, we still have song artists, playlist names and subgenre of playlists. We chose to exclude song artists and playlist names. The primary objective is to predict the playlist genre based on song attributes. While the artist's name or specific playlist names may contribute to the uniqueness of a song or playlist, they might not directly influence the prediction of the genre itself. Additionally, artist names and individual playlist names might introduce too much granularity or noise into the analysis. We also excluded the subgenre of the playlist. If we were to include the subgenre variable in the feature list, we could directly predict the playlist genre. Therefore, utilizing other variables for prediction did not seem meaningful in this scenario. 
+
+Figures 1 to 14 display the relationship between each numerical variable and the outcome variable (playlist genre). Consequently, all numerical variables were included in the feature list.
+
+-   Founders' questions:
+
+Relationship of speechiness and the playlist genre (Figure 14):
+Shape: all are right-skewed and unimodal. Location: rap has the highest speechiness median, while rock has the lowest speechines median. Spread: rap has the highest IQR, while rock has the lowest. Outliers: there are potential outliers in all genres. Therefore, there is a difference in speechiness for each genre.
+
+Relationship of danceability and the playlist genre (Figure 11): Shape: all are slightly left-skewed and unimodal. Location: rap has the highest danceability median, while rock is the lowest danceability median. Spread: rap has the highest IQR, while rock has the lowest. Outliers: there are potential outliers in all genres.
+
+Relationship of tempo and the playlist genre (Figure 12): Shape: all are slightly right-skewed and unimodal. Location: rock and EDM almost have the highest median, while R&B has the lowest median. Spread: rap has the highest IQR, while edm has the lowest. Outliers: there are potential outliers in almost genres exception rap.
+
+The popularity of songs differ between genres: Figure 13 demonstrates genre-specific variations in song popularity, with Pop being the most prevalent, while EDM shows the least popularity.
+
+Relationship of the release year and the playlist genre and the change of track popularity over time: Figure 9 shows that there is a relationship between the release year of songs and the outcome variable. Figure 15 indicates a decline in overall popularity from 1970, followed by a resurgence after 2010. Early on, Rock dominated, but later, Pop and EDM gained traction, while Rap consistently maintained popularity.
+
+-   Model selection:
+
+The model exhibiting the best cross-validation results should ideally perform well on our test set. During cross-validation, LDA achieved an accuracy of 47.778% and an ROC_AUC of 80.202%, while KNN displayed an accuracy of 49.644% and ROC_AUC of 81.424%, and Random Forest showcased an accuracy of 55.222% and an ROC_AUC of 84.695%. Therefore, Random Forest is chosen as the best performer due to its highest accuracy and ROC_AUC scores.
+
+- Model evaluation:
+
+We employed the chosen model from Model selection and generated predictions using the preprocessed test dataset. For performance metrics, we computed the accuracy score and the sensitivity and specificity for each genre. Additionally, we employed ROC curves to assess the model's performance.
+
+It appears that "Year" stands out as the most influential variable in predicting playlist genres, closely followed by danceability. Speechiness, tempo, and energy hold relatively similar importance, followed by other factors.
+
+Table 10 shows that the model a low score of accuracy with 56.933%. However, from Table 9 and Figure 16, the model exhibits strong specificity for all genres, indicating its accuracy in predicting songs outside specific genres. Yet, their sensitivity seem relatively lower, posing challenges in precisely identifying a song that belongs to a genre. Both EDM and rock display commendable performance in sensitivity (both 76.4%) and specificity (93.68% and 95.2%). However, despite their high specificity, Pop, R&B, Latin, and Rap show notably lower sensitivity.
+
+# **Discussion**
+
+We sampled 600 observations randomly, with 100 observations per genre from the original data. These observations were used for prediction after preprocessing.
+
+Overall, the model demonstrates high specificity scores, signifying its robustness in predicting songs that don't belong to particular genres. However, from Table 11 and Figure 17, accuracy (61.167%) and sensitivity appears relatively low, making accurate predictions of a song that belongs to a genre quite challenging. Rock and EDM show good performance in both sensitivity (79% and 82%) and specificity (95% and 95.2%). Conversely, despite achieving high specificity scores, Pop, R&B, Latin, and Rap exhibit significantly lower sensitivity scores.
+
+Thus, this model struggles to accurately predict genres, especially for pop, R&B, Latin, and rap songs.
+
+# **Conclusion**
+
+Spotify, a leading global music streaming service, aims to enhance user experiences and refine playlist recommendations by predicting song genres.
+
+During our exploratory data analysis, we discovered that factors like release year, speechiness, danceability, and tempo contribute significantly to predicting playlist genres. We also noticed variations in song popularity across different genres, particularly observing distinct differences in speechiness among them. Interestingly, there's a noticeable decline in song popularity from the 1970s, followed by a resurgence around 2010.
+
+In our modeling approach, we tested three models: Linear Discriminant Analysis (LDA), K-nearest Neighbors (KNN), and Random Forest. We used various variables such as song popularity, danceability, energy, key, loudness, and more. Categorical variables were excluded, retaining only numerical ones.
+
+After fine-tuning hyperparameters for KNN and Random Forest models, the Random Forest model outperformed LDA and KNN in cross-validation tests, displaying the highest accuracy and ROC_AUC scores. However, during actual testing, the Random Forest model achieved only 56.933% accuracy. It performed well in predicting songs that do not belong to specific genres but struggled with identifying songs that do belong to a genre. 
+
+In summary, the Random Forest model's failure to accurately predict song genres contradicts the initial objectives set by Spotify. In our future work, we intend to experiment with larger samples, introduce additional features, and employ different models to achieve improved performance results.
+
+# **Appendix**
+
+```{r}
+# libraries
+pacman::p_load(dplyr, tidyr, lubridate, skimr, inspectdf, rsample, stringr, knitr, 
+               tidymodels, janitor, pROC, discrim, yardstick, vip, caret)
+```
+
+**Data Preparation**
+
+```{r}
+# dataset
+spotify_songs <- 
+  readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv')
+spotify_songs
+```
+
+```{r}
+skim(spotify_songs)
+```
+
+```{r}
+# extract year from the 'date' column
+spotify_songs <- spotify_songs %>%
+  mutate(year = as.numeric(year(ymd(track_album_release_date)), 
+                           ordered = FALSE))
+```
+
+```{r}
+# extract features
+colnames(spotify_songs)
+```
+
+```{r}
+# remove unnecessary features
+spotify_songs <- spotify_songs %>%
+  dplyr::select(-track_id, -track_album_id, -track_name, -track_album_name, 
+                -playlist_id, -track_album_release_date)
+colnames(spotify_songs)
+```
+
+```{r}
+# handle missing values 
+spotify_songs <- spotify_songs %>% drop_na()
+inspect_na(spotify_songs)
+```
+
+```{r}
+# extract outcome variable
+unique(spotify_songs$playlist_genre)
+```
+
+```{r}
+skim(spotify_songs)
+```
+
+**Exploratory Data Analysis**
+
+```{r}
+# energy
+spotify_songs %>% 
+  ggplot(aes(x = energy, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, energy, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.1: Boxplots of energy against playlist genre",
+       x = "Playlist Genre",
+       y = "Energy",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# key
+spotify_songs %>% 
+  ggplot(aes(x = key, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, key, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.2: Boxplots of key against playlist genre",
+       x = "Playlist Genre",
+       y = "Key",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# loudness
+spotify_songs %>% 
+  ggplot(aes(x = loudness, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, loudness, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.3: Boxplots of loudness against playlist genre",
+       x = "Playlist Genre",
+       y = "Loudness",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# mode
+spotify_songs %>% 
+  ggplot(aes(x = mode, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, mode, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.4: Boxplots of mode against playlist genre",
+       x = "Playlist Genre",
+       y = "Mode",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# acousticness
+spotify_songs %>% 
+  ggplot(aes(x = acousticness, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, acousticness, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.5: Boxplots of acousticness against playlist genre",
+       x = "Playlist Genre",
+       y = "Acousticness",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# instrumentalness
+spotify_songs %>% 
+  ggplot(aes(x = instrumentalness, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, instrumentalness, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.6: Boxplots of instrumentalness against playlist genre",
+       x = "Playlist Genre",
+       y = "Instrumentalness",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# liveness
+spotify_songs %>% 
+  ggplot(aes(x = liveness, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, liveness, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.7: Boxplots of liveness against playlist genre",
+       x = "Playlist Genre",
+       y = "Liveness",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# valence
+spotify_songs %>% 
+  ggplot(aes(x = valence, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, valence, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.8: Boxplots of valence against playlist genre",
+       x = "Playlist Genre",
+       y = "Valence",
+       fill = "Playlist Genre")
+```
+
+```{r}
+# duration_ms
+spotify_songs %>% 
+  ggplot(aes(x = duration_ms, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, duration_ms, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.9: Boxplots of duration (ms) against playlist genre",
+       x = "Playlist Genre",
+       y = "Duration",
+       fill = "Playlist Genre")
+```
+
+The year the song was released can help predict a song's genre
+
+```{r}
+# year
+spotify_songs %>%
+  ggplot(aes(x = playlist_genre, y = year, fill = playlist_genre)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(
+    caption = "Fig.9: Boxplots of year against playlist genre",
+    x = "Playlist Genre",
+    y = "Year",
+    fill = "Playlist Genre"
+  )
+```
+
+How danceable the song is can predict a song's genre
+
+```{r}
+# danceability
+spotify_songs %>% 
+  ggplot(aes(x = danceability, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, danceability, fill = playlist_genre)) +
+           geom_boxplot() + 
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.11: Boxplots of danceability against playlist genre",
+       x = "Playlist Genre",
+       y = "Danceability",
+       fill = "Playlist Genre")
+```
+
+The tempo of the song can predict a song's genre
+
+```{r}
+# tempo
+spotify_songs %>% 
+  ggplot(aes(x = tempo, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, tempo, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.12: Boxplots of tempo against playlist genre",
+       x = "Playlist Genre",
+       y = "Tempo",
+       fill = "Playlist Genre")
+```
+
+The popularity of songs differs between genres
+
+```{r}
+# track_popularity
+spotify_songs %>% 
+  ggplot(aes(x = track_popularity, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, track_popularity, fill = playlist_genre)) +
+           geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.13: Boxplots of track popularity against playlist genre",
+       x = "Playlist Genre",
+       y = "Track popularity",
+       fill = "Playlist Genre")
+```
+
+How "speechy" the song is can help predict a song's genre.
+
+There is a difference in speechiness for each genre
+
+```{r}
+# speechiness
+spotify_songs %>% 
+  ggplot(aes(x = speechiness, fill=playlist_genre)) +
+  geom_histogram(colour="black", show.legend = FALSE) +
+  facet_wrap(.~playlist_genre) +
+  theme_bw()
+spotify_songs %>% 
+  ggplot(aes(playlist_genre, speechiness, fill = playlist_genre)) +
+           geom_boxplot() + 
+  scale_fill_brewer(palette = "Set3") +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.14: Boxplots of speechiness against playlist genre",
+       x = "Playlist Genre",
+       y = "Speechiness",
+       fill = "Playlist Genre")
+```
+
+Track popularity changes over time
+
+```{r}
+spotify_songs %>% 
+  group_by(year, playlist_genre) %>%
+  summarise(mean_popularity = mean(track_popularity)) %>%
+  ggplot(aes(x = year, y = mean_popularity, color = playlist_genre)) +
+  geom_point() +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0.5)) +
+  labs(caption = "Fig.15: Scatterplot of track popularity over year",
+       x = "Playlist Genre",
+       y = "Track popularity",
+       fill = "Playlist Genre")
+```
+
+**Data Sampling, Spliting and Preprocessing**
+
+```{r}
+# data sampling
+set.seed(1879781)
+sample_data <- spotify_songs %>%
+  group_by(playlist_genre) %>%
+  sample_n(size = 1000) %>%
+  ungroup()
+sample_data
+count(sample_data, playlist_genre)
+```
+
+```{r}
+# data spliting
+set.seed(1879781)
+spotify_split <- 
+  initial_split(dplyr::select(
+    sample_data, -track_artist, -playlist_name, -playlist_subgenre), 
+    strata = playlist_genre)
+spotify_train <- training(spotify_split)
+spotify_test <- testing(spotify_split)
+spotify_train
+spotify_test
+```
+
+```{r}
+# data preprocessing
+doParallel::registerDoParallel()
+spotify_recipe <- recipe(playlist_genre ~ . , data = spotify_train) %>%
+  step_zv(all_predictors()) %>%
+  step_normalize(all_predictors()) %>%
+  step_corr( all_predictors() ) %>% 
+  prep()
+spotify_recipe
+```
+
+```{r}
+spotify_train_preproc <- juice(spotify_recipe)
+spotify_test_preproc <- bake(spotify_recipe, new_data = spotify_test)
+head(spotify_train_preproc)
+```
+
+**Model Specifications**
+
+```{r}
+# LDA
+lda_spec <- discrim_linear( mode = "classification" ) %>%
+  set_engine( "MASS" ) 
+# K-nearest neighbours
+knn_spec <- nearest_neighbor(mode = "classification", neighbors = tune()) %>%
+  set_engine("kknn")
+# random forest
+rf_spec <- rand_forest(mode = "classification", mtry = tune(), 
+                       trees = 100, min_n = tune()) %>% 
+  set_engine("ranger", importance = "permutation")
+```
+
+```{r}
+# create bootstrapped samples
+set.seed(1879781)
+spotify_boots <- bootstraps(spotify_train_preproc, 
+                           times = 5, strata = playlist_genre)
+spotify_boots
+```
+
+**Model Tuning**
+
+```{r}
+# tune knn
+doParallel::registerDoParallel()
+k_grid <- grid_regular(neighbors(range = c(1, 100)), levels = 20)
+knn_tuned <- tune_grid(object = knn_spec,
+                               preprocessor = recipe(
+                                 playlist_genre ~ .,
+                                 data = spotify_train_preproc),
+                               resamples = spotify_boots,
+                               grid = k_grid)
+```
+
+```{r}
+best_knn_acc <- select_best(knn_tuned, "roc_auc")
+best_knn_acc
+```
+
+```{r}
+filtered_metrics <- knn_tuned %>% collect_metrics() %>%
+  filter(neighbors == 100)
+filtered_metrics %>%
+  kable(caption = "Metrics for k-NN with 100 neighbors")
+```
+
+```{r}
+knn_final <- finalize_model(knn_spec, best_knn_acc)
+knn_final
+```
+
+```{r}
+# tune random forest
+rand_grid <- grid_regular(finalize(mtry(), spotify_train_preproc %>%
+              dplyr::select(-playlist_genre)),
+  min_n(),
+  levels = 5)
+rand_grid
+```
+
+```{r}
+doParallel::registerDoParallel()
+set.seed(1879781)
+rf_tuned <- tune_grid( object = rf_spec,
+                      preprocessor = recipe(
+                        playlist_genre ~ . , data = spotify_train_preproc),
+                      resamples = spotify_boots,
+                      grid = rand_grid)
+```
+
+```{r}
+rf_tuned %>%
+ collect_metrics() %>%
+  mutate(min_n = as.factor(min_n)) %>%
+  ggplot(aes(x = mtry, y = mean, colour = min_n)) +
+  geom_point(size = 2) +
+  geom_line(alpha = 0.75) +
+  facet_wrap( ~ .metric, scales = "free", nrow = 3)
+```
+
+```{r}
+best_rf_acc <- select_best(rf_tuned, "roc_auc")
+best_rf_acc
+```
+
+```{r}
+filtered_metrics <- rf_tuned %>% collect_metrics() %>%
+  filter(mtry == 4, min_n == 40)
+filtered_metrics %>%
+  kable(caption = "Metrics for Random Forest with mtry 4 and min_n 40")
+```
+
+```{r}
+rf_final <- finalize_model(rf_spec, best_rf_acc)
+rf_final
+```
+
+**Model Selection**
+
+```{r}
+set.seed(1879781)
+# create cross-validation folds
+spotify_cv <- vfold_cv(spotify_train_preproc, v = 5, strata = playlist_genre)
+# LDA
+lda_val <- fit_resamples(object = lda_spec,
+                        preprocessor = recipe(playlist_genre ~ . ,
+                                              data = spotify_train_preproc),
+                        resamples = spotify_cv)
+lda_val %>% collect_metrics()
+# knn
+knn_val <- fit_resamples(object = knn_final,
+                        preprocessor = recipe(playlist_genre ~ . ,
+                                              data = spotify_train_preproc),
+                        resamples = spotify_cv)
+knn_val %>% collect_metrics()
+# random forest
+rf_val <- fit_resamples(object = rf_final,
+                        preprocessor = recipe(playlist_genre ~ . ,
+                                              data = spotify_train_preproc),
+                        resamples = spotify_cv)
+rf_val %>% collect_metrics()
+```
+
+**Model Evaluation**
+
+```{r, fig.cap="Variable importance plot for a Random Forest"}
+set.seed(1879781)
+rf <- rf_final %>%
+  fit(playlist_genre ~ . , spotify_train_preproc)
+rf %>% vip()
+```
+
+```{r}
+rf_predict <- predict(rf, new_data = spotify_test_preproc, 
+                               type = "class") %>%
+  bind_cols(spotify_test_preproc %>% dplyr::select(playlist_genre))
+rf_predict
+```
+
+```{r}
+rf_predict %>% 
+  conf_mat(playlist_genre, .pred_class)
+```
+
+```{r}
+sens_spec_rf <- confusionMatrix(table(rf_predict$.pred_class,rf_predict$playlist_genre))
+sens_spec_rf <- cbind(rownames(sens_spec_rf$byClass), dplyr::select(as_tibble(sens_spec_rf$byClass), 1,2)) %>%
+  rename(genre = `rownames(sens_spec_rf$byClass)`) %>%
+  mutate(genre = str_remove(genre, 'Class:')) %>%
+  arrange(Sensitivity)
+kable(sens_spec_rf, caption = "Sensitivity and specificity for each genre")
+```
+
+```{r}
+metrics_table <- rf_predict %>% 
+  metrics(playlist_genre, .pred_class) 
+kable(metrics_table, caption = "Metrics for Random Forest Predictions")
+```
+
+```{r}
+rf_predict <- rf_predict %>%
+  bind_cols(predict(rf, new_data = spotify_test_preproc, 
+                               type = "prob"))
+rf_predict
+```
+
+```{r}
+roc_data <- rf_predict %>%
+  roc_curve(playlist_genre, c(.pred_edm,.pred_latin, .pred_pop, `.pred_r&b`, .pred_rap, .pred_rock))
+autoplot(roc_data) +
+  labs(
+    caption = "Fig.16: ROC Curve for Multiple Genres",
+    x = "False Positive Rate",
+    y = "True Positive Rate"
+  ) +
+  theme(
+    plot.caption = element_text(hjust = 0.5, margin = margin(t = 10))
+  )
+```
+**Prediction**
+```{r}
+set.seed(1879781)
+spotify_new <- spotify_songs %>%
+  group_by(playlist_genre) %>%
+  slice_sample(n=100) %>%
+  ungroup()
+test_preproc_new <- bake(spotify_recipe, new_data = spotify_new)
+new_prediction <- predict(rf, new_data = test_preproc_new) %>%
+  bind_cols(test_preproc_new %>% dplyr::select(playlist_genre))
+new_prediction %>% 
+  conf_mat(playlist_genre, .pred_class)
+```
+```{r}
+new_sens_spec_rf <- confusionMatrix(table(new_prediction$.pred_class,new_prediction$playlist_genre))
+new_sens_spec_rf <- cbind(rownames(new_sens_spec_rf$byClass), dplyr::select(as_tibble(new_sens_spec_rf$byClass), 1,2)) %>%
+  rename(genre = `rownames(new_sens_spec_rf$byClass)`) %>%
+  mutate(genre = str_remove(genre, 'Class:')) %>%
+  arrange(Sensitivity)
+kable(new_sens_spec_rf, caption = "Sensitivity and Specificity for New Data")
+```
+```{r}
+metrics_table <- new_prediction %>% 
+  metrics(playlist_genre, .pred_class) 
+kable(metrics_table, caption = "Metrics for New Data")
+```
+```{r}
+new_prediction <- new_prediction %>%
+  bind_cols(predict(rf, new_data = test_preproc_new, 
+                               type = "prob"))
+roc_data <- new_prediction %>%
+  roc_curve(playlist_genre, c(.pred_edm,.pred_latin, .pred_pop, `.pred_r&b`, .pred_rap, .pred_rock))
+autoplot(roc_data) +
+  labs(
+    caption = "Fig.17: ROC Curve for New Data",
+    x = "False Positive Rate",
+    y = "True Positive Rate"
+  ) +
+  theme(
+    plot.caption = element_text(hjust = 0.5, margin = margin(t = 10))
+  )
+```
+
+
+
+
+
+
+
